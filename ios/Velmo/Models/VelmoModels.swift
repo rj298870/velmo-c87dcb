@@ -1,0 +1,124 @@
+import Foundation
+import SwiftUI
+
+enum PostKind: String, CaseIterable, Identifiable {
+    case drawing = "Drawing"
+    case board = "Board"
+    case photo = "Photo"
+    case video = "Video"
+    case project = "Project"
+
+    var id: String { rawValue }
+    var symbol: String {
+        switch self {
+        case .drawing: "paintbrush.pointed.fill"
+        case .board: "square.grid.2x2.fill"
+        case .photo: "photo.fill"
+        case .video: "play.rectangle.fill"
+        case .project: "scissors"
+        }
+    }
+}
+
+struct CreativePost: Identifiable, Hashable {
+    let id: UUID
+    let name: String
+    let handle: String
+    let avatar: String
+    let kind: PostKind
+    let topic: String
+    let title: String
+    let caption: String
+    let palette: [Color]
+    let symbol: String
+    let boardName: String?
+    var inspiredCount: Int
+    var commentCount: Int
+    var isInspired: Bool
+    var isSaved: Bool
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        handle: String,
+        avatar: String,
+        kind: PostKind,
+        topic: String,
+        title: String,
+        caption: String,
+        palette: [Color],
+        symbol: String,
+        boardName: String? = nil,
+        inspiredCount: Int,
+        commentCount: Int,
+        isInspired: Bool = false,
+        isSaved: Bool = false
+    ) {
+        self.id = id
+        self.name = name
+        self.handle = handle
+        self.avatar = avatar
+        self.kind = kind
+        self.topic = topic
+        self.title = title
+        self.caption = caption
+        self.palette = palette
+        self.symbol = symbol
+        self.boardName = boardName
+        self.inspiredCount = inspiredCount
+        self.commentCount = commentCount
+        self.isInspired = isInspired
+        self.isSaved = isSaved
+    }
+}
+
+struct InspirationBoard: Identifiable, Hashable {
+    let id: UUID
+    let title: String
+    let description: String
+    let palette: [Color]
+    let symbols: [String]
+    let privacy: String
+    var itemCount: Int
+    var collaborators: [String]
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        description: String,
+        palette: [Color],
+        symbols: [String],
+        privacy: String,
+        itemCount: Int,
+        collaborators: [String] = []
+    ) {
+        self.id = id
+        self.title = title
+        self.description = description
+        self.palette = palette
+        self.symbols = symbols
+        self.privacy = privacy
+        self.itemCount = itemCount
+        self.collaborators = collaborators
+    }
+}
+
+struct CreativeSpace: Identifiable, Hashable {
+    let id = UUID()
+    let name: String
+    let description: String
+    let members: Int
+    let symbol: String
+    let color: Color
+    var isJoined: Bool
+}
+
+struct SuggestedCreator: Identifiable, Hashable {
+    let id = UUID()
+    let name: String
+    let handle: String
+    let initials: String
+    let focus: String
+    let color: Color
+    var isFollowing: Bool
+}
