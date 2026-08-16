@@ -8,16 +8,14 @@ final class VelmoStore {
     var boards: [InspirationBoard]
     var spaces: [CreativeSpace]
     var creators: [SuggestedCreator]
+    var friendRequests: [FriendRequest]
+    var inboxActivities: [InboxActivity]
+    var friends: Set<String> = []
     var selectedTopic = "All"
     var feedMode = "For You"
     var lastSavedBoardName: String?
     var draftCaption = ""
     var profileIsPrivate = false
-
-    var friendRequests: [FriendRequest]
-    var inboxNotifications: [InboxNotification]
-    var friendHandles: Set<String> = []
-    var blockedHandles: Set<String> = []
 
     init() {
         posts = SeedData.posts
@@ -25,66 +23,12 @@ final class VelmoStore {
         spaces = SeedData.spaces
         creators = SeedData.creators
         friendRequests = SeedData.friendRequests
-        inboxNotifications = SeedData.inboxNotifications
+        inboxActivities = SeedData.inboxActivities
         restoreSavedPosts()
     }
 
-    // MARK: - Inbox
-
-    var pendingFriendRequests: [FriendRequest] {
-        friendRequests
-            .filter { $0.status == .pending }
-            .sorted { $0.receivedAt > $1.receivedAt }
-    }
-
-    var hasUnreadInboxActivity: Bool {
-        !pendingFriendRequests.isEmpty || inboxNotifications.contains { !$0.isRead }
-    }
-
-    func notifications(for section: InboxSection) -> [InboxNotification] {
-        inboxNotifications
-            .filter { $0.kind.section == section }
-            .sorted { $0.receivedAt > $1.receivedAt }
-    }
-
-    func acceptFriendRequest(_ requestID: UUID) {
-        guard let index = friendRequests.firstIndex(where: { $0.id == requestID }) else { return }
-        friendRequests[index].status = .accepted
-        let request = friendRequests[index]
-        friendHandles.insert(request.handle)
-        inboxNotifications.insert(
-            InboxNotification(
-                kind: .notification,
-                title: "@\(request.handle) accepted your friend request",
-                subtitle: "You're now friends with \(request.name).",
-                receivedAt: Date()
-            ),
-            at: 0
-        )
-    }
-
-    func declineFriendRequest(_ requestID: UUID) {
-        guard let index = friendRequests.firstIndex(where: { $0.id == requestID }) else { return }
-        friendRequests[index].status = .declined
-    }
-
-    func blockUser(handle: String) {
-        blockedHandles.insert(handle)
-        friendRequests.removeAll { $0.handle == handle }
-        friendHandles.remove(handle)
-    }
-
-    func reportUser(handle: String) {
-        // Local prototype stub: in production this would call a moderation endpoint.
-    }
-
-    func isFriend(handle: String) -> Bool {
-        friendHandles.contains(handle)
-    }
-
-    func markInboxNotificationRead(_ notificationID: UUID) {
-        guard let index = inboxNotifications.firstIndex(where: { $0.id == notificationID }) else { return }
-        inboxNotifications[index].isRead = true
+    var unreadInboxCount: Int {
+        friendRequests.count + inboxActivities.filter(\.isUnread).count
     }
 
     func toggleInspired(for postID: UUID) {
@@ -128,6 +72,65 @@ final class VelmoStore {
     func toggleFollow(_ creatorID: UUID) {
         guard let index = creators.firstIndex(where: { $0.id == creatorID }) else { return }
         creators[index].isFollowing.toggle()
+    }
+
+    func acceptFriendRequest(_ request: FriendRequest) {
+        guard friendRequests.contains(where: { $0.id == request.id }) else { return }
+        friends.insert(request.handle)
+        friendRequests.removeAll { $0.id == request.id }
+        inboxActivities.insert(
+            InboxActivity(
+                kind: .notification,
+                title: "You’re now friends with @\(request.handle)",
+                detail: "You can see each other’s friends-only creations when shared.",
+                timestamp: "Now",
+                symbol: "person.2.fill",
+                color: request.color,
+                isUnread: false
+            ),
+            at: 0
+        )
+    }
+
+    func declineFriendRequest(_ request: FriendRequest) {
+        friendRequests.removeAll { $0.id == request.id }
+    }
+
+    func blockFriendRequest(_ request: FriendRequest) {
+        friendRequests.removeAll { $0.id == request.id }
+        inboxActivities.insert(
+            InboxActivity(
+                kind: .notification,
+                title: "@\(request.handle) was blocked",
+                detail: "They can no longer send you a friend request.",
+                timestamp: "Now",
+                symbol: "hand.raised.fill",
+                color: AppTokens.secondaryInk,
+                isUnread: false
+            ),
+            at: 0
+        )
+    }
+
+    func reportFriendRequest(_ request: FriendRequest) {
+        inboxActivities.insert(
+            InboxActivity(
+                kind: .notification,
+                title: "Report received",
+                detail: "Thanks for helping keep Velmo welcoming.",
+                timestamp: "Now",
+                symbol: "checkmark.shield.fill",
+                color: AppTokens.accent,
+                isUnread: false
+            ),
+            at: 0
+        )
+    }
+
+    func markInboxRead() {
+        for index in inboxActivities.indices {
+            inboxActivities[index].isUnread = false
+        }
     }
 
     func publishDraft() {
@@ -195,15 +198,14 @@ enum SeedData {
     ]
 
     static let friendRequests: [FriendRequest] = [
-        FriendRequest(name: "Nora Lin", handle: "noradraws", initials: "NL", color: AppTokens.lavender, mutualFriends: 4, bioOrSharedInterests: "Watercolor & wildflowers", receivedAt: Date().addingTimeInterval(-120)),
-        FriendRequest(name: "Theo Green", handle: "theogrows", initials: "TG", color: AppTokens.sage, mutualFriends: 1, bioOrSharedInterests: "Balcony gardening", receivedAt: Date().addingTimeInterval(-3600)),
-        FriendRequest(name: "Sami Cole", handle: "samisketch", initials: "SC", color: AppTokens.blue, mutualFriends: 0, bioOrSharedInterests: "Process sketches & setups", receivedAt: Date().addingTimeInterval(-86_400))
+        FriendRequest(name: "Lena Ortiz", handle: "lenamakes", initials: "LO", mutualFriends: 4, bio: "Paper collages, slow mornings, and tiny travel sketches.", timestamp: "2m ago", color: AppTokens.lavender),
+        FriendRequest(name: "Jon Bell", handle: "jonbuilds", initials: "JB", mutualFriends: 1, bio: "Making small spaces feel more like home.", timestamp: "38m ago", color: AppTokens.sage)
     ]
 
-    static let inboxNotifications: [InboxNotification] = [
-        InboxNotification(kind: .boardInvitation, title: "Jay invited you to \"Dream Home\"", subtitle: "Collaborate on a shared board.", receivedAt: Date().addingTimeInterval(-1800)),
-        InboxNotification(kind: .spaceInvitation, title: "Invited to Plant Corner", subtitle: "8.6k members growing things together.", receivedAt: Date().addingTimeInterval(-7200)),
-        InboxNotification(kind: .creationActivity, title: "Your post reached 200 inspired", subtitle: "\"Wildflower studies\" is resonating.", receivedAt: Date().addingTimeInterval(-10_800), isRead: true),
-        InboxNotification(kind: .notification, title: "Rina commented on your board", subtitle: "\"This is exactly the mood I wanted.\"", receivedAt: Date().addingTimeInterval(-172_800), isRead: true)
+    static let inboxActivities: [InboxActivity] = [
+        InboxActivity(kind: .notification, title: "Nora Lin inspired your mood board", detail: "Room to breathe", timestamp: "12m ago", symbol: "heart.fill", color: AppTokens.accent),
+        InboxActivity(kind: .boardInvitation, title: "Jay invited you to Dream Home", detail: "A shared board for light-filled ideas.", timestamp: "1h ago", symbol: "square.grid.2x2.fill", color: AppTokens.oatmeal),
+        InboxActivity(kind: .spaceInvitation, title: "You’re invited to Plant Corner", detail: "Theo thinks you’ll love the weekly sketch prompt.", timestamp: "Yesterday", symbol: "person.3.fill", color: AppTokens.sage),
+        InboxActivity(kind: .creationActivity, title: "Your Sunday prompt is getting noticed", detail: "Three people saved it to their boards.", timestamp: "Yesterday", symbol: "sparkles", color: AppTokens.honey, isUnread: false)
     ]
 }

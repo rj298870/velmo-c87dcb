@@ -20,6 +20,24 @@ enum PostKind: String, CaseIterable, Identifiable {
     }
 }
 
+enum InboxActivityKind: String, CaseIterable, Identifiable {
+    case notification = "Notifications"
+    case boardInvitation = "Board Invitations"
+    case spaceInvitation = "Space Invitations"
+    case creationActivity = "Creation Activity"
+
+    var id: String { rawValue }
+
+    var symbol: String {
+        switch self {
+        case .notification: "heart.fill"
+        case .boardInvitation: "square.grid.2x2.fill"
+        case .spaceInvitation: "person.3.fill"
+        case .creationActivity: "sparkles"
+        }
+    }
+}
+
 struct CreativePost: Identifiable, Hashable {
     let id: UUID
     let name: String
@@ -123,101 +141,64 @@ struct SuggestedCreator: Identifiable, Hashable {
     var isFollowing: Bool
 }
 
-// MARK: - Inbox
-
-enum InboxSection: String, CaseIterable, Identifiable {
-    case friendRequests = "Friend Requests"
-    case notifications = "Notifications"
-    case boardInvitations = "Board Invitations"
-    case spaceInvitations = "Space Invitations"
-    case creationActivity = "Creation Activity"
-
-    var id: String { rawValue }
-}
-
-enum FriendRequestStatus {
-    case pending
-    case accepted
-    case declined
-}
-
 struct FriendRequest: Identifiable, Hashable {
     let id: UUID
     let name: String
     let handle: String
     let initials: String
+    let mutualFriends: Int?
+    let bio: String
+    let timestamp: String
     let color: Color
-    let mutualFriends: Int
-    let bioOrSharedInterests: String
-    let receivedAt: Date
-    var status: FriendRequestStatus
 
     init(
         id: UUID = UUID(),
         name: String,
         handle: String,
         initials: String,
-        color: Color,
-        mutualFriends: Int,
-        bioOrSharedInterests: String,
-        receivedAt: Date,
-        status: FriendRequestStatus = .pending
+        mutualFriends: Int?,
+        bio: String,
+        timestamp: String,
+        color: Color
     ) {
         self.id = id
         self.name = name
         self.handle = handle
         self.initials = initials
-        self.color = color
         self.mutualFriends = mutualFriends
-        self.bioOrSharedInterests = bioOrSharedInterests
-        self.receivedAt = receivedAt
-        self.status = status
+        self.bio = bio
+        self.timestamp = timestamp
+        self.color = color
     }
 }
 
-struct InboxNotification: Identifiable, Hashable {
-    enum Kind {
-        case notification, boardInvitation, spaceInvitation, creationActivity
-
-        var section: InboxSection {
-            switch self {
-            case .notification: .notifications
-            case .boardInvitation: .boardInvitations
-            case .spaceInvitation: .spaceInvitations
-            case .creationActivity: .creationActivity
-            }
-        }
-
-        var symbol: String {
-            switch self {
-            case .notification: "bell.fill"
-            case .boardInvitation: "square.grid.2x2.fill"
-            case .spaceInvitation: "person.3.fill"
-            case .creationActivity: "sparkles"
-            }
-        }
-    }
-
+struct InboxActivity: Identifiable, Hashable {
     let id: UUID
-    let kind: Kind
+    let kind: InboxActivityKind
     let title: String
-    let subtitle: String
-    let receivedAt: Date
-    var isRead: Bool
+    let detail: String
+    let timestamp: String
+    let symbol: String
+    let color: Color
+    var isUnread: Bool
 
     init(
         id: UUID = UUID(),
-        kind: Kind,
+        kind: InboxActivityKind,
         title: String,
-        subtitle: String,
-        receivedAt: Date,
-        isRead: Bool = false
+        detail: String,
+        timestamp: String,
+        symbol: String,
+        color: Color,
+        isUnread: Bool = true
     ) {
         self.id = id
         self.kind = kind
         self.title = title
-        self.subtitle = subtitle
-        self.receivedAt = receivedAt
-        self.isRead = isRead
+        self.detail = detail
+        self.timestamp = timestamp
+        self.symbol = symbol
+        self.color = color
+        self.isUnread = isUnread
     }
 }
