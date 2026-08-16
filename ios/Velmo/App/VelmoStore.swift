@@ -14,12 +14,77 @@ final class VelmoStore {
     var draftCaption = ""
     var profileIsPrivate = false
 
+    var friendRequests: [FriendRequest]
+    var inboxNotifications: [InboxNotification]
+    var friendHandles: Set<String> = []
+    var blockedHandles: Set<String> = []
+
     init() {
         posts = SeedData.posts
         boards = SeedData.boards
         spaces = SeedData.spaces
         creators = SeedData.creators
+        friendRequests = SeedData.friendRequests
+        inboxNotifications = SeedData.inboxNotifications
         restoreSavedPosts()
+    }
+
+    // MARK: - Inbox
+
+    var pendingFriendRequests: [FriendRequest] {
+        friendRequests
+            .filter { $0.status == .pending }
+            .sorted { $0.receivedAt > $1.receivedAt }
+    }
+
+    var hasUnreadInboxActivity: Bool {
+        !pendingFriendRequests.isEmpty || inboxNotifications.contains { !$0.isRead }
+    }
+
+    func notifications(for section: InboxSection) -> [InboxNotification] {
+        inboxNotifications
+            .filter { $0.kind.section == section }
+            .sorted { $0.receivedAt > $1.receivedAt }
+    }
+
+    func acceptFriendRequest(_ requestID: UUID) {
+        guard let index = friendRequests.firstIndex(where: { $0.id == requestID }) else { return }
+        friendRequests[index].status = .accepted
+        let request = friendRequests[index]
+        friendHandles.insert(request.handle)
+        inboxNotifications.insert(
+            InboxNotification(
+                kind: .notification,
+                title: "@\(request.handle) accepted your friend request",
+                subtitle: "You're now friends with \(request.name).",
+                receivedAt: Date()
+            ),
+            at: 0
+        )
+    }
+
+    func declineFriendRequest(_ requestID: UUID) {
+        guard let index = friendRequests.firstIndex(where: { $0.id == requestID }) else { return }
+        friendRequests[index].status = .declined
+    }
+
+    func blockUser(handle: String) {
+        blockedHandles.insert(handle)
+        friendRequests.removeAll { $0.handle == handle }
+        friendHandles.remove(handle)
+    }
+
+    func reportUser(handle: String) {
+        // Local prototype stub: in production this would call a moderation endpoint.
+    }
+
+    func isFriend(handle: String) -> Bool {
+        friendHandles.contains(handle)
+    }
+
+    func markInboxNotificationRead(_ notificationID: UUID) {
+        guard let index = inboxNotifications.firstIndex(where: { $0.id == notificationID }) else { return }
+        inboxNotifications[index].isRead = true
     }
 
     func toggleInspired(for postID: UUID) {
@@ -127,5 +192,18 @@ enum SeedData {
         SuggestedCreator(name: "Ari Kim", handle: "arikim", initials: "AK", focus: "Collage maker", color: AppTokens.lavender, isFollowing: false),
         SuggestedCreator(name: "Moss Lane", handle: "mosslane", initials: "ML", focus: "Plant doodles", color: AppTokens.sage, isFollowing: true),
         SuggestedCreator(name: "Ivy Rose", handle: "ivyrose", initials: "IR", focus: "Photo stories", color: AppTokens.honey, isFollowing: false)
+    ]
+
+    static let friendRequests: [FriendRequest] = [
+        FriendRequest(name: "Nora Lin", handle: "noradraws", initials: "NL", color: AppTokens.lavender, mutualFriends: 4, bioOrSharedInterests: "Watercolor & wildflowers", receivedAt: Date().addingTimeInterval(-120)),
+        FriendRequest(name: "Theo Green", handle: "theogrows", initials: "TG", color: AppTokens.sage, mutualFriends: 1, bioOrSharedInterests: "Balcony gardening", receivedAt: Date().addingTimeInterval(-3600)),
+        FriendRequest(name: "Sami Cole", handle: "samisketch", initials: "SC", color: AppTokens.blue, mutualFriends: 0, bioOrSharedInterests: "Process sketches & setups", receivedAt: Date().addingTimeInterval(-86_400))
+    ]
+
+    static let inboxNotifications: [InboxNotification] = [
+        InboxNotification(kind: .boardInvitation, title: "Jay invited you to \"Dream Home\"", subtitle: "Collaborate on a shared board.", receivedAt: Date().addingTimeInterval(-1800)),
+        InboxNotification(kind: .spaceInvitation, title: "Invited to Plant Corner", subtitle: "8.6k members growing things together.", receivedAt: Date().addingTimeInterval(-7200)),
+        InboxNotification(kind: .creationActivity, title: "Your post reached 200 inspired", subtitle: "\"Wildflower studies\" is resonating.", receivedAt: Date().addingTimeInterval(-10_800), isRead: true),
+        InboxNotification(kind: .notification, title: "Rina commented on your board", subtitle: "\"This is exactly the mood I wanted.\"", receivedAt: Date().addingTimeInterval(-172_800), isRead: true)
     ]
 }
