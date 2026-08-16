@@ -6,6 +6,7 @@ struct BoardDetailView: View {
     let board: InspirationBoard
     @State private var sort = "Recently Saved"
     @State private var showInviteConfirmation = false
+    @State private var showStudio = false
     private let sorts = ["Recently Saved", "Oldest", "Most Inspired"]
 
     var body: some View {
@@ -13,7 +14,7 @@ struct BoardDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: AppTokens.Spacing.xl) {
                     BoardCoverView(board: board)
-                        .frame(height: AppTokens.media)
+                        .frame(height: AppTokens.Size.media)
                     VStack(alignment: .leading, spacing: AppTokens.Spacing.xs) {
                         Text(board.title)
                             .font(AppTokens.displayFont)
