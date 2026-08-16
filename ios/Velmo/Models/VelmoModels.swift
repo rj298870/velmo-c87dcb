@@ -122,3 +122,102 @@ struct SuggestedCreator: Identifiable, Hashable {
     let color: Color
     var isFollowing: Bool
 }
+
+// MARK: - Inbox
+
+enum InboxSection: String, CaseIterable, Identifiable {
+    case friendRequests = "Friend Requests"
+    case notifications = "Notifications"
+    case boardInvitations = "Board Invitations"
+    case spaceInvitations = "Space Invitations"
+    case creationActivity = "Creation Activity"
+
+    var id: String { rawValue }
+}
+
+enum FriendRequestStatus {
+    case pending
+    case accepted
+    case declined
+}
+
+struct FriendRequest: Identifiable, Hashable {
+    let id: UUID
+    let name: String
+    let handle: String
+    let initials: String
+    let color: Color
+    let mutualFriends: Int
+    let bioOrSharedInterests: String
+    let receivedAt: Date
+    var status: FriendRequestStatus
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        handle: String,
+        initials: String,
+        color: Color,
+        mutualFriends: Int,
+        bioOrSharedInterests: String,
+        receivedAt: Date,
+        status: FriendRequestStatus = .pending
+    ) {
+        self.id = id
+        self.name = name
+        self.handle = handle
+        self.initials = initials
+        self.color = color
+        self.mutualFriends = mutualFriends
+        self.bioOrSharedInterests = bioOrSharedInterests
+        self.receivedAt = receivedAt
+        self.status = status
+    }
+}
+
+struct InboxNotification: Identifiable, Hashable {
+    enum Kind {
+        case notification, boardInvitation, spaceInvitation, creationActivity
+
+        var section: InboxSection {
+            switch self {
+            case .notification: .notifications
+            case .boardInvitation: .boardInvitations
+            case .spaceInvitation: .spaceInvitations
+            case .creationActivity: .creationActivity
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .notification: "bell.fill"
+            case .boardInvitation: "square.grid.2x2.fill"
+            case .spaceInvitation: "person.3.fill"
+            case .creationActivity: "sparkles"
+            }
+        }
+    }
+
+    let id: UUID
+    let kind: Kind
+    let title: String
+    let subtitle: String
+    let receivedAt: Date
+    var isRead: Bool
+
+    init(
+        id: UUID = UUID(),
+        kind: Kind,
+        title: String,
+        subtitle: String,
+        receivedAt: Date,
+        isRead: Bool = false
+    ) {
+        self.id = id
+        self.kind = kind
+        self.title = title
+        self.subtitle = subtitle
+        self.receivedAt = receivedAt
+        self.isRead = isRead
+    }
+}
