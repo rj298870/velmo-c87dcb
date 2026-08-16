@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var selectedPost: CreativePost?
     @State private var postToSave: CreativePost?
     @State private var showPromptStudio = false
+    @State private var showInbox = false
     private let topics = ["All", "Art", "Vision Boards", "DIY", "Home", "Food", "Gaming", "Travel", "Plants", "Photography"]
 
     var body: some View {
@@ -29,14 +30,32 @@ struct HomeView: View {
                         .foregroundStyle(AppTokens.ink)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showPromptStudio = true } label: {
-                        Image(systemName: "plus")
-                            .font(AppTokens.symbolFont)
-                            .foregroundStyle(AppTokens.onAccent)
-                            .frame(width: AppTokens.Size.hitTarget, height: AppTokens.Size.hitTarget)
-                            .background(AppTokens.accent, in: Circle())
+                    HStack(spacing: AppTokens.Spacing.xs) {
+                        Button { showInbox = true } label: {
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "tray")
+                                    .font(AppTokens.symbolFont)
+                                    .foregroundStyle(AppTokens.ink)
+                                    .frame(width: AppTokens.Size.hitTarget, height: AppTokens.Size.hitTarget)
+                                if store.hasUnreadInboxActivity {
+                                    Circle()
+                                        .fill(AppTokens.accent)
+                                        .frame(width: AppTokens.Spacing.xs, height: AppTokens.Spacing.xs)
+                                        .offset(x: -AppTokens.Spacing.xs, y: AppTokens.Spacing.xs)
+                                }
+                            }
+                        }
+                        .accessibilityLabel(store.hasUnreadInboxActivity ? "Inbox, new activity" : "Inbox")
+
+                        Button { showPromptStudio = true } label: {
+                            Image(systemName: "plus")
+                                .font(AppTokens.symbolFont)
+                                .foregroundStyle(AppTokens.onAccent)
+                                .frame(width: AppTokens.Size.hitTarget, height: AppTokens.Size.hitTarget)
+                                .background(AppTokens.accent, in: Circle())
+                        }
+                        .accessibilityLabel("Create something")
                     }
-                    .accessibilityLabel("Create something")
                 }
             }
             .sheet(item: $selectedPost) { post in
@@ -49,6 +68,10 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showPromptStudio) {
                 CreateStudioView()
+                    .environment(store)
+            }
+            .sheet(isPresented: $showInbox) {
+                InboxView()
                     .environment(store)
             }
         }
