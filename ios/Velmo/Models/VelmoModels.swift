@@ -20,6 +20,24 @@ enum PostKind: String, CaseIterable, Identifiable {
     }
 }
 
+enum InboxActivityKind: String, CaseIterable, Identifiable {
+    case notification = "Notifications"
+    case boardInvitation = "Board Invitations"
+    case spaceInvitation = "Space Invitations"
+    case creationActivity = "Creation Activity"
+
+    var id: String { rawValue }
+
+    var symbol: String {
+        switch self {
+        case .notification: "heart.fill"
+        case .boardInvitation: "square.grid.2x2.fill"
+        case .spaceInvitation: "person.3.fill"
+        case .creationActivity: "sparkles"
+        }
+    }
+}
+
 struct CreativePost: Identifiable, Hashable {
     let id: UUID
     let name: String
@@ -121,4 +139,66 @@ struct SuggestedCreator: Identifiable, Hashable {
     let focus: String
     let color: Color
     var isFollowing: Bool
+}
+
+struct FriendRequest: Identifiable, Hashable {
+    let id: UUID
+    let name: String
+    let handle: String
+    let initials: String
+    let mutualFriends: Int?
+    let bio: String
+    let timestamp: String
+    let color: Color
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        handle: String,
+        initials: String,
+        mutualFriends: Int?,
+        bio: String,
+        timestamp: String,
+        color: Color
+    ) {
+        self.id = id
+        self.name = name
+        self.handle = handle
+        self.initials = initials
+        self.mutualFriends = mutualFriends
+        self.bio = bio
+        self.timestamp = timestamp
+        self.color = color
+    }
+}
+
+struct InboxActivity: Identifiable, Hashable {
+    let id: UUID
+    let kind: InboxActivityKind
+    let title: String
+    let detail: String
+    let timestamp: String
+    let symbol: String
+    let color: Color
+    var isUnread: Bool
+
+    init(
+        id: UUID = UUID(),
+        kind: InboxActivityKind,
+        title: String,
+        detail: String,
+        timestamp: String,
+        symbol: String,
+        color: Color,
+        isUnread: Bool = true
+    ) {
+        self.id = id
+        self.kind = kind
+        self.title = title
+        self.detail = detail
+        self.timestamp = timestamp
+        self.symbol = symbol
+        self.color = color
+        self.isUnread = isUnread
+    }
 }

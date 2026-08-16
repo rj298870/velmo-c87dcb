@@ -8,6 +8,9 @@ final class VelmoStore {
     var boards: [InspirationBoard]
     var spaces: [CreativeSpace]
     var creators: [SuggestedCreator]
+    var friendRequests: [FriendRequest]
+    var inboxActivities: [InboxActivity]
+    var friends: Set<String> = []
     var selectedTopic = "All"
     var feedMode = "For You"
     var lastSavedBoardName: String?
@@ -19,7 +22,13 @@ final class VelmoStore {
         boards = SeedData.boards
         spaces = SeedData.spaces
         creators = SeedData.creators
+        friendRequests = SeedData.friendRequests
+        inboxActivities = SeedData.inboxActivities
         restoreSavedPosts()
+    }
+
+    var unreadInboxCount: Int {
+        friendRequests.count + inboxActivities.filter(\.isUnread).count
     }
 
     func toggleInspired(for postID: UUID) {
@@ -63,6 +72,65 @@ final class VelmoStore {
     func toggleFollow(_ creatorID: UUID) {
         guard let index = creators.firstIndex(where: { $0.id == creatorID }) else { return }
         creators[index].isFollowing.toggle()
+    }
+
+    func acceptFriendRequest(_ request: FriendRequest) {
+        guard friendRequests.contains(where: { $0.id == request.id }) else { return }
+        friends.insert(request.handle)
+        friendRequests.removeAll { $0.id == request.id }
+        inboxActivities.insert(
+            InboxActivity(
+                kind: .notification,
+                title: "You’re now friends with @\(request.handle)",
+                detail: "You can see each other’s friends-only creations when shared.",
+                timestamp: "Now",
+                symbol: "person.2.fill",
+                color: request.color,
+                isUnread: false
+            ),
+            at: 0
+        )
+    }
+
+    func declineFriendRequest(_ request: FriendRequest) {
+        friendRequests.removeAll { $0.id == request.id }
+    }
+
+    func blockFriendRequest(_ request: FriendRequest) {
+        friendRequests.removeAll { $0.id == request.id }
+        inboxActivities.insert(
+            InboxActivity(
+                kind: .notification,
+                title: "@\(request.handle) was blocked",
+                detail: "They can no longer send you a friend request.",
+                timestamp: "Now",
+                symbol: "hand.raised.fill",
+                color: AppTokens.secondaryInk,
+                isUnread: false
+            ),
+            at: 0
+        )
+    }
+
+    func reportFriendRequest(_ request: FriendRequest) {
+        inboxActivities.insert(
+            InboxActivity(
+                kind: .notification,
+                title: "Report received",
+                detail: "Thanks for helping keep Velmo welcoming.",
+                timestamp: "Now",
+                symbol: "checkmark.shield.fill",
+                color: AppTokens.accent,
+                isUnread: false
+            ),
+            at: 0
+        )
+    }
+
+    func markInboxRead() {
+        for index in inboxActivities.indices {
+            inboxActivities[index].isUnread = false
+        }
     }
 
     func publishDraft() {
@@ -127,5 +195,17 @@ enum SeedData {
         SuggestedCreator(name: "Ari Kim", handle: "arikim", initials: "AK", focus: "Collage maker", color: AppTokens.lavender, isFollowing: false),
         SuggestedCreator(name: "Moss Lane", handle: "mosslane", initials: "ML", focus: "Plant doodles", color: AppTokens.sage, isFollowing: true),
         SuggestedCreator(name: "Ivy Rose", handle: "ivyrose", initials: "IR", focus: "Photo stories", color: AppTokens.honey, isFollowing: false)
+    ]
+
+    static let friendRequests: [FriendRequest] = [
+        FriendRequest(name: "Lena Ortiz", handle: "lenamakes", initials: "LO", mutualFriends: 4, bio: "Paper collages, slow mornings, and tiny travel sketches.", timestamp: "2m ago", color: AppTokens.lavender),
+        FriendRequest(name: "Jon Bell", handle: "jonbuilds", initials: "JB", mutualFriends: 1, bio: "Making small spaces feel more like home.", timestamp: "38m ago", color: AppTokens.sage)
+    ]
+
+    static let inboxActivities: [InboxActivity] = [
+        InboxActivity(kind: .notification, title: "Nora Lin inspired your mood board", detail: "Room to breathe", timestamp: "12m ago", symbol: "heart.fill", color: AppTokens.accent),
+        InboxActivity(kind: .boardInvitation, title: "Jay invited you to Dream Home", detail: "A shared board for light-filled ideas.", timestamp: "1h ago", symbol: "square.grid.2x2.fill", color: AppTokens.oatmeal),
+        InboxActivity(kind: .spaceInvitation, title: "You’re invited to Plant Corner", detail: "Theo thinks you’ll love the weekly sketch prompt.", timestamp: "Yesterday", symbol: "person.3.fill", color: AppTokens.sage),
+        InboxActivity(kind: .creationActivity, title: "Your Sunday prompt is getting noticed", detail: "Three people saved it to their boards.", timestamp: "Yesterday", symbol: "sparkles", color: AppTokens.honey, isUnread: false)
     ]
 }

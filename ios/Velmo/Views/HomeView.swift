@@ -28,7 +28,24 @@ struct HomeView: View {
                         .font(AppTokens.titleFont)
                         .foregroundStyle(AppTokens.ink)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    NavigationLink {
+                        InboxView()
+                    } label: {
+                        Image(systemName: "tray")
+                            .font(AppTokens.symbolFont)
+                            .foregroundStyle(AppTokens.ink)
+                            .frame(width: AppTokens.Size.hitTarget, height: AppTokens.Size.hitTarget)
+                            .overlay(alignment: .topTrailing) {
+                                if store.unreadInboxCount > 0 {
+                                    Circle()
+                                        .fill(AppTokens.accent)
+                                        .frame(width: AppTokens.Spacing.sm, height: AppTokens.Spacing.sm)
+                                        .overlay(Circle().stroke(AppTokens.surface, lineWidth: 2))
+                                }
+                            }
+                    }
+                    .accessibilityLabel("Inbox, \(store.unreadInboxCount) new items")
                     Button { showPromptStudio = true } label: {
                         Image(systemName: "plus")
                             .font(AppTokens.symbolFont)
