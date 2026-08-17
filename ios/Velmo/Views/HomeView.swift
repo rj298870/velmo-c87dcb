@@ -159,7 +159,7 @@ private struct PostCard: View {
                         .background(AppTokens.oatmeal, in: Capsule())
                 }
                 Button(action: onOpen) {
-                    MediaArtworkView(palette: post.palette, symbol: post.symbol, title: post.title)
+                    MediaArtworkView(palette: post.palette, symbol: post.symbol, title: post.title, artworkImageData: post.artworkImageData)
                 }
                 .buttonStyle(.plain)
                 VStack(alignment: .leading, spacing: AppTokens.Spacing.xs) {

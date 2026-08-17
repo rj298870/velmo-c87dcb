@@ -112,7 +112,7 @@ struct ProfileView: View {
             LazyVGrid(columns: profileColumns, spacing: AppTokens.Spacing.md) {
                 ForEach(store.posts.prefix(4)) { post in
                     VStack(alignment: .leading, spacing: AppTokens.Spacing.xs) {
-                        MediaArtworkView(palette: post.palette, symbol: post.symbol, title: post.title, compact: true)
+                        MediaArtworkView(palette: post.palette, symbol: post.symbol, title: post.title, artworkImageData: post.artworkImageData, compact: true)
                         Text(post.title)
                             .font(AppTokens.captionFont)
                             .foregroundStyle(AppTokens.ink)

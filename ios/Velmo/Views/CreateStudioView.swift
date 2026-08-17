@@ -47,7 +47,7 @@ struct CreateStudioView: View {
                 if phase == .editor {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Post") {
-                            store.publishDraft()
+                            store.publishDraft(artworkImageData: drawingImage?.pngData())
                             dismiss()
                         }
                         .font(AppTokens.headlineFont)

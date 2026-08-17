@@ -49,6 +49,7 @@ struct CreativePost: Identifiable, Hashable {
     let caption: String
     let palette: [Color]
     let symbol: String
+    let artworkImageData: Data?
     let boardName: String?
     var inspiredCount: Int
     var commentCount: Int
@@ -66,6 +67,7 @@ struct CreativePost: Identifiable, Hashable {
         caption: String,
         palette: [Color],
         symbol: String,
+        artworkImageData: Data? = nil,
         boardName: String? = nil,
         inspiredCount: Int,
         commentCount: Int,
@@ -82,6 +84,7 @@ struct CreativePost: Identifiable, Hashable {
         self.caption = caption
         self.palette = palette
         self.symbol = symbol
+        self.artworkImageData = artworkImageData
         self.boardName = boardName
         self.inspiredCount = inspiredCount
         self.commentCount = commentCount
