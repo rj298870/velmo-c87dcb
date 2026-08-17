@@ -13,6 +13,7 @@ final class VelmoStore {
     var friends: Set<String> = []
     var selectedTopic = "All"
     var feedMode = "For You"
+    var draftCaption = ""
     var lastSavedBoardName: String?
     var profileIsPrivate = false
     var profileDisplayName = "Mia Vega"
