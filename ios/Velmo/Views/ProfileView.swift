@@ -54,17 +54,17 @@ struct ProfileView: View {
                 LinearGradient(colors: [AppTokens.oatmeal, AppTokens.lavender], startPoint: .topLeading, endPoint: .bottomTrailing)
                     .frame(height: AppTokens.Size.promptMedia)
                     .clipShape(RoundedRectangle(cornerRadius: AppTokens.cardRadius, style: .continuous))
-                AvatarView(initials: "MV", color: AppTokens.honey, size: AppTokens.Size.primaryButton + AppTokens.Spacing.md)
+                AvatarView(initials: profileInitials, color: AppTokens.honey, size: AppTokens.Size.primaryButton + AppTokens.Spacing.md)
                     .padding(AppTokens.Spacing.md)
             }
             VStack(alignment: .leading, spacing: AppTokens.Spacing.xxs) {
-                Text("Mia Vega")
+                Text(store.profileDisplayName)
                     .font(AppTokens.displayFont)
                     .foregroundStyle(AppTokens.ink)
-                Text("@miamakes")
+                Text("@\(store.profileUsername)")
                     .font(AppTokens.bodyFont)
                     .foregroundStyle(AppTokens.secondaryInk)
-                Text("Making small worlds from scraps, sketches, and sunny corners.")
+                Text("Born \(store.profileBirthday.formatted(date: .abbreviated, time: .omitted))")
                     .font(AppTokens.bodyFont)
                     .foregroundStyle(AppTokens.secondaryInk)
             }
@@ -75,6 +75,16 @@ struct ProfileView: View {
                 .frame(height: AppTokens.Size.primaryButton)
                 .background(AppTokens.oatmeal, in: Capsule())
         }
+    }
+
+    private var profileInitials: String {
+        let initials = store.profileDisplayName
+            .split(whereSeparator: \.isWhitespace)
+            .prefix(2)
+            .compactMap(\.first)
+            .map(String.init)
+            .joined()
+        return initials.isEmpty ? "V" : initials.uppercased()
     }
 
     private var stats: some View {
@@ -204,7 +214,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Account") {
-                    Label("Mia Vega", systemImage: "person.crop.circle")
+                    Label(store.profileDisplayName, systemImage: "person.crop.circle")
                 }
                 Section("Privacy") {
                     Toggle("Private profile", isOn: Bindable(store).profileIsPrivate)

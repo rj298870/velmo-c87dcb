@@ -172,10 +172,12 @@ final class VelmoStore {
         profileBirthday = birthday
         profileInterests = interests
 
-        UserDefaults.standard.set(profileDisplayName, forKey: "velmo.profileDisplayName")
-        UserDefaults.standard.set(profileUsername, forKey: "velmo.profileUsername")
-        UserDefaults.standard.set(profileBirthday.timeIntervalSince1970, forKey: "velmo.profileBirthday")
-        UserDefaults.standard.set(profileInterests, forKey: "velmo.profileInterests")
+        let defaults = UserDefaults.standard
+        defaults.set(profileDisplayName, forKey: "velmo.profileDisplayName")
+        defaults.set(profileUsername, forKey: "velmo.profileUsername")
+        defaults.set(profileBirthday.timeIntervalSince1970, forKey: "velmo.profileBirthday")
+        defaults.set(profileInterests, forKey: "velmo.profileInterests")
+        defaults.set(true, forKey: "velmo.hasCompletedOnboarding")
     }
 
     private func restoreProfile() {

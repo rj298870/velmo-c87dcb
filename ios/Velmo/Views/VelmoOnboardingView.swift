@@ -172,7 +172,7 @@ struct VelmoOnboardingView: View {
             birthday: birthday,
             interests: interests.sorted()
         )
-        hasCompletedOnboarding = true
+        hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "velmo.hasCompletedOnboarding")
     }
 }
 
