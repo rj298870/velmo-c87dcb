@@ -1,4 +1,5 @@
 import SwiftUI
+import PencilKit
 
 @available(iOS 17.0, *)
 struct CreateStudioView: View {
@@ -6,7 +7,13 @@ struct CreateStudioView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var phase: StudioPhase = .start
     @State private var selectedTemplate = "Mood Board"
+    @State private var canvas = PKCanvasView()
+    @State private var selectedInk = AppTokens.ink
+    @State private var brushWidth = AppTokens.Spacing.xxs
+    @State private var isErasing = false
+    @State private var drawingImage: UIImage?
     private let templates = ["Mood Board", "Dream Room", "Weekly Goals", "Recipe Card", "Travel Memories", "Scrapbook Page"]
+    private let inkColors = [AppTokens.ink, AppTokens.accent, AppTokens.lavender, AppTokens.blue, AppTokens.sage, AppTokens.honey]
 
     var body: some View {
         NavigationStack {
@@ -16,22 +23,31 @@ struct CreateStudioView: View {
                     startContent
                 case .templates:
                     templateContent
+                case .drawing:
+                    drawingContent
                 case .editor:
                     editorContent
                 }
             }
             .background(AppTokens.background)
-            .navigationTitle(phase == .editor ? "Create" : "Create something")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Close") { dismiss() }
                         .font(AppTokens.bodyFont)
                 }
+                if phase == .drawing {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Finish Drawing", action: finishDrawing)
+                            .font(AppTokens.headlineFont)
+                            .foregroundStyle(AppTokens.accent)
+                    }
+                }
                 if phase == .editor {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Post") {
-                            store.publishDraft()
+                            store.publishDraft(artworkImageData: drawingImage?.pngData())
                             dismiss()
                         }
                         .font(AppTokens.headlineFont)
@@ -39,6 +55,17 @@ struct CreateStudioView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var navigationTitle: String {
+        switch phase {
+        case .editor:
+            "Create"
+        case .drawing:
+            "Drawing"
+        case .start, .templates:
+            "Create something"
         }
     }
 
@@ -55,7 +82,7 @@ struct CreateStudioView: View {
                         .foregroundStyle(AppTokens.secondaryInk)
                 }
                 VStack(spacing: AppTokens.Spacing.sm) {
-                    studioAction("Start drawing", symbol: "pencil.and.scribble") { phase = .editor }
+                    studioAction("Start drawing", symbol: "pencil.and.scribble") { phase = .drawing }
                     studioAction("Make a collage", symbol: "square.on.square") { phase = .templates }
                     studioAction("Use a template", symbol: "sparkles") { phase = .templates }
                 }
@@ -94,6 +121,7 @@ struct CreateStudioView: View {
                     ForEach(templates, id: \.self) { template in
                         Button {
                             selectedTemplate = template
+                            drawingImage = nil
                             phase = .editor
                         } label: {
                             TemplateCard(title: template, isSelected: selectedTemplate == template)
@@ -107,10 +135,71 @@ struct CreateStudioView: View {
         }
     }
 
+    private var drawingContent: some View {
+        DrawingCanvasView(canvas: canvas, color: selectedInk, brushWidth: brushWidth, isErasing: isErasing)
+            .clipShape(RoundedRectangle(cornerRadius: AppTokens.mediaRadius, style: .continuous))
+            .padding(AppTokens.Spacing.screen)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                drawingTools
+            }
+    }
+
+    private var drawingTools: some View {
+        VStack(spacing: AppTokens.Spacing.sm) {
+            HStack(spacing: AppTokens.Spacing.xs) {
+                ForEach(inkColors.indices, id: \.self) { index in
+                    Button {
+                        selectedInk = inkColors[index]
+                        isErasing = false
+                    } label: {
+                        Circle()
+                            .fill(inkColors[index])
+                            .frame(width: AppTokens.Size.hitTarget, height: AppTokens.Size.hitTarget)
+                            .overlay {
+                                Circle().stroke(AppTokens.surface, lineWidth: selectedInk == inkColors[index] && !isErasing ? AppTokens.Spacing.xxs : 0)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Select ink color")
+                }
+            }
+            HStack(spacing: AppTokens.Spacing.sm) {
+                ForEach([AppTokens.Spacing.xxs, AppTokens.Spacing.xs, AppTokens.Spacing.sm], id: \.self) { width in
+                    Button {
+                        brushWidth = width
+                        isErasing = false
+                    } label: {
+                        Circle()
+                            .fill(AppTokens.ink)
+                            .frame(width: width * AppTokens.Spacing.xxs, height: width * AppTokens.Spacing.xxs)
+                            .frame(width: AppTokens.Size.hitTarget, height: AppTokens.Size.hitTarget)
+                            .background(brushWidth == width && !isErasing ? AppTokens.oatmeal : AppTokens.surface, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Select brush size")
+                }
+                Spacer()
+                Button {
+                    isErasing.toggle()
+                } label: {
+                    Label("Erase", systemImage: "eraser.fill")
+                        .font(AppTokens.headlineFont)
+                        .foregroundStyle(isErasing ? AppTokens.onAccent : AppTokens.ink)
+                        .frame(minHeight: AppTokens.Size.hitTarget)
+                        .padding(.horizontal, AppTokens.Spacing.sm)
+                        .background(isErasing ? AppTokens.accent : AppTokens.oatmeal, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(AppTokens.Spacing.md)
+        .background(AppTokens.surface)
+    }
+
     private var editorContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppTokens.Spacing.xl) {
-                MediaArtworkView(palette: [AppTokens.honey, AppTokens.lavender], symbol: "sparkles", title: selectedTemplate)
+                artworkPreview
                 CardSurface {
                     VStack(alignment: .leading, spacing: AppTokens.Spacing.sm) {
                         Text(selectedTemplate)
@@ -144,6 +233,30 @@ struct CreateStudioView: View {
         }
     }
 
+    @ViewBuilder
+    private var artworkPreview: some View {
+        if let drawingImage {
+            Image(uiImage: drawingImage)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .frame(height: AppTokens.Size.media)
+                .background(AppTokens.surface, in: RoundedRectangle(cornerRadius: AppTokens.mediaRadius, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppTokens.mediaRadius, style: .continuous))
+                .accessibilityLabel("Your finished drawing")
+        } else {
+            MediaArtworkView(palette: [AppTokens.honey, AppTokens.lavender], symbol: "sparkles", title: selectedTemplate)
+        }
+    }
+
+    private func finishDrawing() {
+        let bounds = canvas.bounds
+        guard !bounds.isEmpty else { return }
+        drawingImage = canvas.drawing.image(from: bounds, scale: UIScreen.main.scale)
+        selectedTemplate = "My Drawing"
+        phase = .editor
+    }
+
     private func studioAction(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: symbol)
@@ -167,6 +280,7 @@ struct CreateStudioView: View {
 private enum StudioPhase {
     case start
     case templates
+    case drawing
     case editor
 }
 

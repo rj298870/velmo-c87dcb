@@ -45,7 +45,7 @@ struct BoardDetailView: View {
                     LazyVGrid(columns: contentColumns, spacing: AppTokens.Spacing.md) {
                         ForEach(store.posts) { post in
                             VStack(alignment: .leading, spacing: AppTokens.Spacing.xs) {
-                                MediaArtworkView(palette: post.palette, symbol: post.symbol, title: post.title, compact: true)
+                                MediaArtworkView(palette: post.palette, symbol: post.symbol, title: post.title, artworkImageData: post.artworkImageData, compact: true)
                                 Text(post.title)
                                     .font(AppTokens.captionFont)
                                     .foregroundStyle(AppTokens.ink)
@@ -102,7 +102,7 @@ struct PostDetailView: View {
                                 .foregroundStyle(AppTokens.secondaryInk)
                         }
                     }
-                    MediaArtworkView(palette: post.palette, symbol: post.symbol, title: post.title)
+                    MediaArtworkView(palette: post.palette, symbol: post.symbol, title: post.title, artworkImageData: post.artworkImageData)
                     VStack(alignment: .leading, spacing: AppTokens.Spacing.sm) {
                         Text(post.title)
                             .font(AppTokens.displayFont)

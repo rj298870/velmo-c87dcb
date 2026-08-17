@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @available(iOS 17.0, *)
 struct AvatarView: View {
@@ -22,9 +23,26 @@ struct MediaArtworkView: View {
     let palette: [Color]
     let symbol: String
     let title: String
+    var artworkImageData: Data? = nil
     var compact = false
 
     var body: some View {
+        Group {
+            if let artworkImageData, let image = UIImage(data: artworkImageData) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                placeholderArtwork
+            }
+        }
+        .frame(height: compact ? AppTokens.Size.compactMedia : AppTokens.Size.media)
+        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: AppTokens.mediaRadius, style: .continuous))
+        .accessibilityLabel("Artwork: \(title)")
+    }
+
+    private var placeholderArtwork: some View {
         ZStack {
             LinearGradient(colors: palette, startPoint: .topLeading, endPoint: .bottomTrailing)
             Circle()

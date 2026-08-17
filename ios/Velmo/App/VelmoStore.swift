@@ -133,7 +133,7 @@ final class VelmoStore {
         }
     }
 
-    func publishDraft() {
+    func publishDraft(artworkImageData: Data? = nil) {
         let text = draftCaption.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         posts.insert(
@@ -147,6 +147,7 @@ final class VelmoStore {
                 caption: text,
                 palette: [AppTokens.honey, AppTokens.accent],
                 symbol: "sparkles",
+                artworkImageData: artworkImageData,
                 boardName: "Creative Projects",
                 inspiredCount: 0,
                 commentCount: 0
