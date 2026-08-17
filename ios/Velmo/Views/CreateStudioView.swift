@@ -7,7 +7,7 @@ struct CreateStudioView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var phase: StudioPhase = .start
     @State private var drawingDestination: DrawingDestination = .editor
-    @State private var selectedTemplate = "Mood Board"
+    @State private var artworkTitle = "My creation"
     @State private var canvas = PKCanvasView()
     @State private var selectedInk = AppTokens.ink
     @State private var brushWidth = AppTokens.Spacing.xxs
@@ -17,7 +17,6 @@ struct CreateStudioView: View {
     @State private var writeBody = ""
     @State private var showPhotoPicker = false
 
-    private let templates = ["Mood Board", "Dream Room", "Weekly Goals", "Recipe Card", "Travel Memories", "Scrapbook Page"]
     private let inkColors = [AppTokens.ink, AppTokens.accent, AppTokens.lavender, AppTokens.blue, AppTokens.sage, AppTokens.honey]
 
     var body: some View {
@@ -26,8 +25,6 @@ struct CreateStudioView: View {
                 switch phase {
                 case .start:
                     startContent
-                case .templates:
-                    templateContent
                 case .drawing:
                     drawingContent
                 case .editor:
@@ -88,7 +85,7 @@ struct CreateStudioView: View {
             "Drawing"
         case .writing:
             "Write a post"
-        case .start, .templates:
+        case .start:
             "Create something"
         }
     }
@@ -113,8 +110,11 @@ struct CreateStudioView: View {
                     studioAction("Write a post", symbol: "text.alignleft") {
                         phase = .writing
                     }
-                    studioAction("Make a collage", symbol: "square.on.square") { phase = .templates }
-                    studioAction("Use a template", symbol: "sparkles") { phase = .templates }
+                    studioAction("Make a collage", symbol: "square.on.square") {
+                        artworkTitle = "Collage"
+                        drawingImage = nil
+                        phase = .editor
+                    }
                 }
                 CardSurface {
                     HStack(spacing: AppTokens.Spacing.sm) {
@@ -133,30 +133,6 @@ struct CreateStudioView: View {
                         Image(systemName: "chevron.right")
                             .font(AppTokens.captionFont)
                             .foregroundStyle(AppTokens.mutedInk)
-                    }
-                }
-            }
-            .padding(AppTokens.Spacing.screen)
-            .padding(.bottom, AppTokens.Spacing.huge)
-        }
-    }
-
-    private var templateContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AppTokens.Spacing.xl) {
-                Text("Templates")
-                    .font(AppTokens.titleFont)
-                    .foregroundStyle(AppTokens.ink)
-                LazyVGrid(columns: templateColumns, spacing: AppTokens.Spacing.md) {
-                    ForEach(templates, id: \.self) { template in
-                        Button {
-                            selectedTemplate = template
-                            drawingImage = nil
-                            phase = .editor
-                        } label: {
-                            TemplateCard(title: template, isSelected: selectedTemplate == template)
-                        }
-                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -232,7 +208,7 @@ struct CreateStudioView: View {
                 artworkPreview
                 CardSurface {
                     VStack(alignment: .leading, spacing: AppTokens.Spacing.sm) {
-                        Text(selectedTemplate)
+                        Text(artworkTitle)
                             .font(AppTokens.titleFont)
                             .foregroundStyle(AppTokens.ink)
                         Text("Your canvas is ready. Add a thought, then choose where it belongs.")
@@ -304,7 +280,7 @@ struct CreateStudioView: View {
                 .clipShape(RoundedRectangle(cornerRadius: AppTokens.mediaRadius, style: .continuous))
                 .accessibilityLabel("Attached artwork")
         } else {
-            MediaArtworkView(palette: [AppTokens.honey, AppTokens.lavender], symbol: "sparkles", title: selectedTemplate)
+            MediaArtworkView(palette: [AppTokens.honey, AppTokens.lavender], symbol: "sparkles", title: artworkTitle)
         }
     }
 
@@ -312,7 +288,7 @@ struct CreateStudioView: View {
         let bounds = canvas.bounds
         guard !bounds.isEmpty else { return }
         drawingImage = canvas.drawing.image(from: bounds, scale: UIScreen.main.scale)
-        selectedTemplate = "My Drawing"
+        artworkTitle = "My Drawing"
         phase = drawingDestination == .writing ? .writing : .editor
     }
 
@@ -348,18 +324,11 @@ struct CreateStudioView: View {
         }
         .buttonStyle(.plain)
     }
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    private var templateColumns: [GridItem] {
-        let count = dynamicTypeSize.isAccessibilitySize ? 1 : 2
-        return Array(repeating: GridItem(.flexible(), spacing: AppTokens.Spacing.md), count: count)
-    }
 }
 
 @available(iOS 17.0, *)
 private enum StudioPhase {
     case start
-    case templates
     case drawing
     case editor
     case writing
@@ -368,25 +337,6 @@ private enum StudioPhase {
 private enum DrawingDestination {
     case editor
     case writing
-}
-
-@available(iOS 17.0, *)
-private struct TemplateCard: View {
-    let title: String
-    let isSelected: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: AppTokens.Spacing.md) {
-            MediaArtworkView(palette: isSelected ? [AppTokens.accent, AppTokens.honey] : [AppTokens.oatmeal, AppTokens.lavender], symbol: "square.on.square", title: title, compact: true)
-            Text(title)
-                .font(AppTokens.headlineFont)
-                .foregroundStyle(AppTokens.ink)
-                .lineLimit(2)
-        }
-        .padding(AppTokens.Spacing.sm)
-        .background(AppTokens.surface, in: RoundedRectangle(cornerRadius: AppTokens.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: AppTokens.cardRadius, style: .continuous).stroke(isSelected ? AppTokens.accent : AppTokens.border, lineWidth: AppTokens.Spacing.xxs / AppTokens.Spacing.xxs))
-    }
 }
 
 #Preview {
