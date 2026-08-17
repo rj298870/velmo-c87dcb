@@ -133,18 +133,22 @@ final class VelmoStore {
         }
     }
 
-    func publishDraft(artworkImageData: Data? = nil) {
-        let text = draftCaption.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+    func publishDraft(title: String? = nil, body: String? = nil, artworkImageData: Data? = nil) {
+        let providedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let providedBody = body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let draftText = draftCaption.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalTitle = providedTitle.isEmpty ? "A little thought for today" : providedTitle
+        let finalCaption = providedBody.isEmpty ? draftText : providedBody
+        guard !providedTitle.isEmpty || !finalCaption.isEmpty || artworkImageData != nil else { return }
         posts.insert(
             CreativePost(
                 name: "Mia Vega",
                 handle: "miamakes",
                 avatar: "MV",
-                kind: .project,
+                kind: artworkImageData == nil ? .project : .photo,
                 topic: "Creative Projects",
-                title: "A little thought for today",
-                caption: text,
+                title: finalTitle,
+                caption: finalCaption,
                 palette: [AppTokens.honey, AppTokens.accent],
                 symbol: "sparkles",
                 artworkImageData: artworkImageData,

@@ -6,12 +6,17 @@ struct CreateStudioView: View {
     @Environment(VelmoStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var phase: StudioPhase = .start
+    @State private var drawingDestination: DrawingDestination = .editor
     @State private var selectedTemplate = "Mood Board"
     @State private var canvas = PKCanvasView()
     @State private var selectedInk = AppTokens.ink
     @State private var brushWidth = AppTokens.Spacing.xxs
     @State private var isErasing = false
     @State private var drawingImage: UIImage?
+    @State private var writeHeading = ""
+    @State private var writeBody = ""
+    @State private var showPhotoPicker = false
+
     private let templates = ["Mood Board", "Dream Room", "Weekly Goals", "Recipe Card", "Travel Memories", "Scrapbook Page"]
     private let inkColors = [AppTokens.ink, AppTokens.accent, AppTokens.lavender, AppTokens.blue, AppTokens.sage, AppTokens.honey]
 
@@ -27,6 +32,8 @@ struct CreateStudioView: View {
                     drawingContent
                 case .editor:
                     editorContent
+                case .writing:
+                    writingContent
                 }
             }
             .background(AppTokens.background)
@@ -54,6 +61,21 @@ struct CreateStudioView: View {
                         .foregroundStyle(AppTokens.accent)
                     }
                 }
+                if phase == .writing {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Post", action: publishWrittenPost)
+                            .font(AppTokens.headlineFont)
+                            .foregroundStyle(AppTokens.accent)
+                            .disabled(writeHeading.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && writeBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
+            }
+            .sheet(isPresented: $showPhotoPicker) {
+                PhotoLibraryPicker(onImagePicked: { image in
+                    drawingImage = image
+                }, onFinished: {
+                    showPhotoPicker = false
+                })
             }
         }
     }
@@ -64,6 +86,8 @@ struct CreateStudioView: View {
             "Create"
         case .drawing:
             "Drawing"
+        case .writing:
+            "Write a post"
         case .start, .templates:
             "Create something"
         }
@@ -82,7 +106,13 @@ struct CreateStudioView: View {
                         .foregroundStyle(AppTokens.secondaryInk)
                 }
                 VStack(spacing: AppTokens.Spacing.sm) {
-                    studioAction("Start drawing", symbol: "pencil.and.scribble") { phase = .drawing }
+                    studioAction("Start drawing", symbol: "pencil.and.scribble") {
+                        drawingDestination = .editor
+                        phase = .drawing
+                    }
+                    studioAction("Write a post", symbol: "text.alignleft") {
+                        phase = .writing
+                    }
                     studioAction("Make a collage", symbol: "square.on.square") { phase = .templates }
                     studioAction("Use a template", symbol: "sparkles") { phase = .templates }
                 }
@@ -216,17 +246,46 @@ struct CreateStudioView: View {
                     .padding(AppTokens.Spacing.md)
                     .background(AppTokens.surface, in: RoundedRectangle(cornerRadius: AppTokens.cardRadius, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: AppTokens.cardRadius, style: .continuous).stroke(AppTokens.border, lineWidth: AppTokens.Spacing.xxs / AppTokens.Spacing.xxs))
-                HStack(spacing: AppTokens.Spacing.sm) {
-                    ToolPill(title: "Photos", symbol: "photo.on.rectangle")
-                    ToolPill(title: "Text", symbol: "textformat")
-                    ToolPill(title: "Colors", symbol: "paintpalette")
-                }
                 Button("Save to Drafts") { dismiss() }
                     .font(AppTokens.headlineFont)
                     .foregroundStyle(AppTokens.accent)
                     .frame(maxWidth: .infinity)
                     .frame(height: AppTokens.Size.primaryButton)
                     .background(AppTokens.oatmeal, in: Capsule())
+            }
+            .padding(AppTokens.Spacing.screen)
+            .padding(.bottom, AppTokens.Spacing.huge)
+        }
+    }
+
+    private var writingContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppTokens.Spacing.xl) {
+                if drawingImage != nil {
+                    artworkPreview
+                }
+                CardSurface {
+                    VStack(alignment: .leading, spacing: AppTokens.Spacing.sm) {
+                        TextField("Heading", text: $writeHeading)
+                            .font(AppTokens.titleFont)
+                            .foregroundStyle(AppTokens.ink)
+                        Divider()
+                        TextEditor(text: $writeBody)
+                            .font(AppTokens.bodyFont)
+                            .foregroundStyle(AppTokens.ink)
+                            .frame(minHeight: AppTokens.Size.media)
+                            .scrollContentBackground(.hidden)
+                    }
+                }
+                HStack(spacing: AppTokens.Spacing.sm) {
+                    attachmentButton("Add Drawing", symbol: "pencil.and.scribble") {
+                        drawingDestination = .writing
+                        phase = .drawing
+                    }
+                    attachmentButton("Add Photos", symbol: "photo.on.rectangle") {
+                        showPhotoPicker = true
+                    }
+                }
             }
             .padding(AppTokens.Spacing.screen)
             .padding(.bottom, AppTokens.Spacing.huge)
@@ -243,7 +302,7 @@ struct CreateStudioView: View {
                 .frame(height: AppTokens.Size.media)
                 .background(AppTokens.surface, in: RoundedRectangle(cornerRadius: AppTokens.mediaRadius, style: .continuous))
                 .clipShape(RoundedRectangle(cornerRadius: AppTokens.mediaRadius, style: .continuous))
-                .accessibilityLabel("Your finished drawing")
+                .accessibilityLabel("Attached artwork")
         } else {
             MediaArtworkView(palette: [AppTokens.honey, AppTokens.lavender], symbol: "sparkles", title: selectedTemplate)
         }
@@ -254,7 +313,16 @@ struct CreateStudioView: View {
         guard !bounds.isEmpty else { return }
         drawingImage = canvas.drawing.image(from: bounds, scale: UIScreen.main.scale)
         selectedTemplate = "My Drawing"
-        phase = .editor
+        phase = drawingDestination == .writing ? .writing : .editor
+    }
+
+    private func publishWrittenPost() {
+        store.publishDraft(
+            title: writeHeading,
+            body: writeBody,
+            artworkImageData: drawingImage?.pngData()
+        )
+        dismiss()
     }
 
     private func studioAction(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
@@ -265,6 +333,18 @@ struct CreateStudioView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: AppTokens.Size.primaryButton)
                 .background(AppTokens.accent, in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func attachmentButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: symbol)
+                .font(AppTokens.headlineFont)
+                .foregroundStyle(AppTokens.ink)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: AppTokens.Size.hitTarget)
+                .background(AppTokens.oatmeal, in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -282,6 +362,12 @@ private enum StudioPhase {
     case templates
     case drawing
     case editor
+    case writing
+}
+
+private enum DrawingDestination {
+    case editor
+    case writing
 }
 
 @available(iOS 17.0, *)
@@ -300,21 +386,6 @@ private struct TemplateCard: View {
         .padding(AppTokens.Spacing.sm)
         .background(AppTokens.surface, in: RoundedRectangle(cornerRadius: AppTokens.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppTokens.cardRadius, style: .continuous).stroke(isSelected ? AppTokens.accent : AppTokens.border, lineWidth: AppTokens.Spacing.xxs / AppTokens.Spacing.xxs))
-    }
-}
-
-@available(iOS 17.0, *)
-private struct ToolPill: View {
-    let title: String
-    let symbol: String
-
-    var body: some View {
-        Label(title, systemImage: symbol)
-            .font(AppTokens.captionFont)
-            .foregroundStyle(AppTokens.secondaryInk)
-            .padding(.horizontal, AppTokens.Spacing.sm)
-            .frame(minHeight: AppTokens.Size.hitTarget)
-            .background(AppTokens.oatmeal, in: Capsule())
     }
 }
 
