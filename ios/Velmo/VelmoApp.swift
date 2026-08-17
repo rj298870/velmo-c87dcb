@@ -6,9 +6,24 @@ struct VelmoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            VelmoRootView()
+            VelmoLaunchView()
                 .environment(store)
                 .preferredColorScheme(.light)
+        }
+    }
+}
+
+@available(iOS 17.0, *)
+struct VelmoLaunchView: View {
+    @AppStorage("velmo.hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
+    var body: some View {
+        Group {
+            if hasCompletedOnboarding {
+                VelmoRootView()
+            } else {
+                VelmoOnboardingView()
+            }
         }
     }
 }

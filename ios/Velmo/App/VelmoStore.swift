@@ -14,8 +14,11 @@ final class VelmoStore {
     var selectedTopic = "All"
     var feedMode = "For You"
     var lastSavedBoardName: String?
-    var draftCaption = ""
     var profileIsPrivate = false
+    var profileDisplayName = "Mia Vega"
+    var profileUsername = "miamakes"
+    var profileBirthday = Calendar.current.date(byAdding: .year, value: -20, to: .now) ?? .now
+    var profileInterests: [String] = []
 
     init() {
         posts = SeedData.posts
@@ -25,6 +28,7 @@ final class VelmoStore {
         friendRequests = SeedData.friendRequests
         inboxActivities = SeedData.inboxActivities
         restoreSavedPosts()
+        restoreProfile()
     }
 
     var unreadInboxCount: Int {
@@ -159,6 +163,29 @@ final class VelmoStore {
             at: 0
         )
         draftCaption = ""
+    }
+
+    func saveOnboardingProfile(displayName: String, username: String, birthday: Date, interests: [String]) {
+        profileDisplayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        profileUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        profileBirthday = birthday
+        profileInterests = interests
+
+        UserDefaults.standard.set(profileDisplayName, forKey: "velmo.profileDisplayName")
+        UserDefaults.standard.set(profileUsername, forKey: "velmo.profileUsername")
+        UserDefaults.standard.set(profileBirthday.timeIntervalSince1970, forKey: "velmo.profileBirthday")
+        UserDefaults.standard.set(profileInterests, forKey: "velmo.profileInterests")
+    }
+
+    private func restoreProfile() {
+        let defaults = UserDefaults.standard
+        profileDisplayName = defaults.string(forKey: "velmo.profileDisplayName") ?? profileDisplayName
+        profileUsername = defaults.string(forKey: "velmo.profileUsername") ?? profileUsername
+        profileInterests = defaults.stringArray(forKey: "velmo.profileInterests") ?? []
+
+        if defaults.object(forKey: "velmo.profileBirthday") != nil {
+            profileBirthday = Date(timeIntervalSince1970: defaults.double(forKey: "velmo.profileBirthday"))
+        }
     }
 
     private func persistSavedPosts() {
