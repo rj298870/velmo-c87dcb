@@ -216,7 +216,14 @@ struct CreateStudioView: View {
                             .foregroundStyle(AppTokens.secondaryInk)
                     }
                 }
-                TextField("Share an idea, moment, or creation…", text: Bindable(store).draftCaption, axis: .vertical)
+                TextField(
+                    "Share an idea, moment, or creation…",
+                    text: Binding(
+                        get: { store.draftCaption },
+                        set: { store.draftCaption = $0 }
+                    ),
+                    axis: .vertical
+                )
                     .font(AppTokens.bodyFont)
                     .lineLimit(4...7)
                     .padding(AppTokens.Spacing.md)
