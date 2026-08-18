@@ -175,6 +175,20 @@ struct FriendRequest: Identifiable, Hashable {
     }
 }
 
+struct BlockedUser: Identifiable, Codable, Hashable {
+    let id: UUID
+    let name: String
+    let handle: String
+    let initials: String
+
+    init(id: UUID = UUID(), name: String, handle: String, initials: String) {
+        self.id = id
+        self.name = name
+        self.handle = handle
+        self.initials = initials
+    }
+}
+
 struct InboxActivity: Identifiable, Hashable {
     let id: UUID
     let kind: InboxActivityKind

@@ -204,56 +204,6 @@ private struct BoardCardProxy: View {
     }
 }
 
-@available(iOS 17.0, *)
-struct SettingsView: View {
-    @Environment(VelmoStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
-    @State private var comments = "People you follow"
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Account") {
-                    Label(store.profileDisplayName, systemImage: "person.crop.circle")
-                }
-                Section("Privacy") {
-                    Toggle("Private profile", isOn: Bindable(store).profileIsPrivate)
-                    Picker("Who can comment", selection: $comments) {
-                        Text("Everyone").tag("Everyone")
-                        Text("People you follow").tag("People you follow")
-                        Text("No one").tag("No one")
-                    }
-                    Label("Board visibility", systemImage: "lock")
-                    Label("Create from my posts", systemImage: "paintbrush")
-                }
-                Section("Notifications") {
-                    Label("Creative activity", systemImage: "bell")
-                    Label("Board invites", systemImage: "person.2")
-                }
-                Section("Accessibility") {
-                    Label("Image descriptions", systemImage: "text.viewfinder")
-                    Label("Reduce motion", systemImage: "figure.walk")
-                }
-                Section("Safety") {
-                    Label("Blocked users", systemImage: "hand.raised")
-                    Label("Community rules", systemImage: "checklist")
-                    Label("Report a problem", systemImage: "exclamationmark.bubble")
-                }
-            }
-            .scrollContentBackground(.hidden)
-            .background(AppTokens.background)
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .foregroundStyle(AppTokens.accent)
-                }
-            }
-        }
-    }
-}
-
 #Preview {
     ProfileView()
         .environment(VelmoStore())

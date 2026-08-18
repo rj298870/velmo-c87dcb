@@ -29,7 +29,7 @@ struct VelmoOnboardingView: View {
                 interestsContent
             }
         }
-        .animation(.smooth, value: step)
+        .animation(store.reduceMotionEnabled ? nil : .smooth, value: step)
     }
 
     private var welcomeContent: some View {

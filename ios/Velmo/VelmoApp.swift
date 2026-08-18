@@ -8,6 +8,11 @@ struct VelmoApp: App {
         WindowGroup {
             VelmoLaunchView()
                 .environment(store)
+                .transaction { transaction in
+                    if store.reduceMotionEnabled {
+                        transaction.animation = nil
+                    }
+                }
                 .preferredColorScheme(.light)
         }
     }
