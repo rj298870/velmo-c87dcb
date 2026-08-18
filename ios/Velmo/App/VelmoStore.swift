@@ -16,6 +16,10 @@ final class VelmoStore {
     var draftCaption = ""
     var lastSavedBoardName: String?
     var profileIsPrivate = false
+    var boardVisibility = "Private"
+    var imageDescriptionsEnabled = false
+    var reduceMotionEnabled = false
+    var blockedUsers: [BlockedUser] = []
     var profileDisplayName = "Mia Vega"
     var profileUsername = "miamakes"
     var profileBirthday = Calendar.current.date(byAdding: .year, value: -20, to: .now) ?? .now
@@ -30,6 +34,7 @@ final class VelmoStore {
         inboxActivities = SeedData.inboxActivities
         restoreSavedPosts()
         restoreProfile()
+        restoreSettings()
     }
 
     var unreadInboxCount: Int {
@@ -103,6 +108,16 @@ final class VelmoStore {
 
     func blockFriendRequest(_ request: FriendRequest) {
         friendRequests.removeAll { $0.id == request.id }
+        if !blockedUsers.contains(where: { $0.handle == request.handle }) {
+            blockedUsers.append(
+                BlockedUser(
+                    name: request.name,
+                    handle: request.handle,
+                    initials: request.initials
+                )
+            )
+            persistSettings()
+        }
         inboxActivities.insert(
             InboxActivity(
                 kind: .notification,
@@ -115,6 +130,55 @@ final class VelmoStore {
             ),
             at: 0
         )
+    }
+
+    func unblock(_ user: BlockedUser) {
+        blockedUsers.removeAll { $0.id == user.id }
+        persistSettings()
+    }
+
+    func updateProfilePrivacy(_ isPrivate: Bool) {
+        profileIsPrivate = isPrivate
+        persistSettings()
+    }
+
+    func updateBoardVisibility(_ visibility: String) {
+        boardVisibility = visibility
+        persistSettings()
+    }
+
+    func updateImageDescriptions(_ isEnabled: Bool) {
+        imageDescriptionsEnabled = isEnabled
+        persistSettings()
+    }
+
+    func updateReduceMotion(_ isEnabled: Bool) {
+        reduceMotionEnabled = isEnabled
+        persistSettings()
+    }
+
+    func submitProblemReport(_ message: String) {
+        let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedMessage.isEmpty else { return }
+        var reports = UserDefaults.standard.stringArray(forKey: "velmo.problemReports") ?? []
+        reports.append(trimmedMessage)
+        UserDefaults.standard.set(reports, forKey: "velmo.problemReports")
+    }
+
+    func logOut() {
+        let defaults = UserDefaults.standard
+        [
+            "velmo.hasCompletedOnboarding",
+            "velmo.profileDisplayName",
+            "velmo.profileUsername",
+            "velmo.profileBirthday",
+            "velmo.profileInterests"
+        ].forEach { defaults.removeObject(forKey: $0) }
+
+        profileDisplayName = "Mia Vega"
+        profileUsername = "miamakes"
+        profileBirthday = Calendar.current.date(byAdding: .year, value: -20, to: .now) ?? .now
+        profileInterests = []
     }
 
     func reportFriendRequest(_ request: FriendRequest) {
@@ -188,6 +252,30 @@ final class VelmoStore {
 
         if defaults.object(forKey: "velmo.profileBirthday") != nil {
             profileBirthday = Date(timeIntervalSince1970: defaults.double(forKey: "velmo.profileBirthday"))
+        }
+    }
+
+    private func restoreSettings() {
+        let defaults = UserDefaults.standard
+        profileIsPrivate = defaults.bool(forKey: "velmo.profileIsPrivate")
+        boardVisibility = defaults.string(forKey: "velmo.boardVisibility") ?? "Private"
+        imageDescriptionsEnabled = defaults.bool(forKey: "velmo.imageDescriptionsEnabled")
+        reduceMotionEnabled = defaults.bool(forKey: "velmo.reduceMotionEnabled")
+
+        if let data = defaults.data(forKey: "velmo.blockedUsers"),
+           let users = try? JSONDecoder().decode([BlockedUser].self, from: data) {
+            blockedUsers = users
+        }
+    }
+
+    private func persistSettings() {
+        let defaults = UserDefaults.standard
+        defaults.set(profileIsPrivate, forKey: "velmo.profileIsPrivate")
+        defaults.set(boardVisibility, forKey: "velmo.boardVisibility")
+        defaults.set(imageDescriptionsEnabled, forKey: "velmo.imageDescriptionsEnabled")
+        defaults.set(reduceMotionEnabled, forKey: "velmo.reduceMotionEnabled")
+        if let data = try? JSONEncoder().encode(blockedUsers) {
+            defaults.set(data, forKey: "velmo.blockedUsers")
         }
     }
 
